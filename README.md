@@ -1,5 +1,3 @@
-This repository includes all the code used in my Monograph, including the sensor that logged the data and the software that plotted all the data into the different graphs that were used.
-
-Included in the "Examples" folder are examples of the files and graphs produced by the program.
+This repository includes all the code used in my monograph, including some examples of what it produces. I also include the previous code that was produced, but that was deprecated due to a shift in the objectives of the project.
 
 Juan Pablo Arenas
