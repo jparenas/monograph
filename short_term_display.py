@@ -1,16 +1,22 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+# This code sends a serial signal to a µC programmed with the ARDUINO program, receiving all the data continuosly, and plotting it accordingly. It also exports all the data to .csv for further analysis.
+
 import serial
 import os
 import math
 import matplotlib.pyplot as pyplot
 import time
+import csv
 
 voltage = 4.68
 resistorVoltage = voltage * (1005.0/(1005.0+273.0))
 resistance = 470000
-#For full resolution, it is better to use a combination of 3000ms and 20 steps per sample. More than that is overkill. For any tests, any above above and
+#For full resolution, it is better to use a combination of 4000ms and 20 steps per sample. More than that is overkill. For any tests, any above above and
 #below, respectively, are appropiate.
 #Time in ms
-timePerSample = 3000
+timePerSample = 4000
 #How many steps to add for each sample
 sampleStep = 20
 initialStep = sampleStep
@@ -22,9 +28,7 @@ windowDPI = 80
 #Sets the DPI for the document (DPI*dimensions is the actual size in pixels)
 fileDPI = 300
 #This is the directory where the image is saved
-directory = os.path.expanduser("~/Downloads/")
-
-print("Using the following settings:\nVoltage: " + str(voltage) + "V\nDivider Voltage: " + str(resistorVoltage) + "V\nCurrent Resistance: " + str(resistance) + " Ohms\nTime per sample: " + str(timePerSample) + "ms\nNumber of samples: " + str(4096/sampleStep) + "\nApproximate time of experiment: " + str(4096/sampleStep*(timePerSample+500)/1000) + "s\nInitial Voltage: " + str(resistorVoltage-(initialStep/4095.0*voltage)) + "V\nEnd Voltage: " + str(resistorVoltage-(endStep/4095.0*voltage)) + "V")
+directory = os.path.expanduser("~/Documents/Colegio/Undécimo/Monografía/Datos/")
 
 try:
     #Put the correct serial port in here
@@ -33,6 +37,8 @@ try:
 except serial.serialutil.SerialException:
     print("Port is closed. Maybe it isn't connected?")
     quit()
+
+print("Using the following settings:\nVoltage: " + str(voltage) + "V\nDivider Voltage: " + str(resistorVoltage) + "V\nCurrent Resistance: " + str(resistance) + " Ohms\nTime per sample: " + str(timePerSample) + "ms\nNumber of samples: " + str(4096/sampleStep) + "\nApproximate time of experiment: " + str(4096/sampleStep*(timePerSample+500)/1000) + "s\nInitial Voltage: " + str(resistorVoltage-(initialStep/4095.0*voltage)) + "V\nEnd Voltage: " + str(resistorVoltage-(endStep/4095.0*voltage)) + "V")
 
 pyplot.ion()
 fig, ax = pyplot.subplots(figsize=(fileDimensions[0], fileDimensions[1]), dpi=windowDPI)
@@ -88,6 +94,12 @@ for i in xrange(initialStep, endStep, sampleStep):
 
 ser.close()
 print("Program ended")
+
+with open(directory + "graph.csv", "wb") as csvFile:
+    csvWriter = csv.writer(csvFile)
+    csvWriter.writerow(["Voltage (V)", "Average Current (mA)", "Maximum Current (mA)", "Power (mW)"])
+    for row in zip(plotList[0], plotList[1], plotList[2], plotList[3]):
+        csvWriter.writerow(row)
 
 pyplot.ioff()
 pyplot.savefig(directory + "graph" + '.png', bbox_inches='tight', dpi=fileDPI)
