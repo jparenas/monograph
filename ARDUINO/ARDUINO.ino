@@ -1,58 +1,74 @@
-// This sketch monitors the analog pin over a short period of time determined by serial input, 
-// transmitting the data over Serial in order to plot it in a computer using the complementary Python script.
+#include <Wire.h>
+#include <Adafruit_MCP4725.h>
+
+#define REPETITIONS 3
+
+Adafruit_MCP4725 dac;
 
 int voltage;
-int repetitions;
+long timePerSample;
 
 void setup() {
-  Serial.begin(115200);
+  pinMode(A0, INPUT);
+  pinMode(A1, INPUT);
 
   pinMode(13, OUTPUT);
+
+  dac.begin(0x60);
+  
+  Serial.begin(115200);
 }
 
 void loop() {
+  voltage = 0;
+  timePerSample = 0;
   bool check = false;
-  
-  // Waits for the start command, followed by the properties.
-  while (!check) {
-    while (Serial.available() > 0) {
-      String string = Serial.readStringUntil('\n');
-      if (string == "START") {
-        Serial.println("READY");
-        check = true;
-        break;
-      }
-    }
-  }
-  check = false;
 
   while (!check) {
     while (Serial.available() > 0) {
-      String string = Serial.readStringUntil('\n');
-      if (string == "MEASURE") {
+      voltage = Serial.readStringUntil('\n').toInt();
+      voltage = constrain(voltage, 0, 4095);
+      if(voltage) {
         check = true;
-        break;
-      } else {
-        int index = string.indexOf("V:");
-        if (index != -1) {
-          voltage = constrain(string.substring(index+2).toInt(), 0, (2 << 11 - 1));
-        }
-        index = string.indexOf("R:");
-        if (index != -1) {
-          repetitions = string.substring(index+2).toInt();
-        }
       }
     }
   }
+
+  check = false;
+  while (!check) {
+    while (Serial.available() > 0) {
+      timePerSample = Serial.readStringUntil('\n').toInt();
+      timePerSample = constrain(timePerSample, 0, 100000);
+      if(timePerSample) {
+        check = true;
+      }
+    }
+  }
+
+  dac.setVoltage(voltage, false);
+
+  delay(5);
+
+  long startTime = millis();
+
+  Serial.println("START");
 
   digitalWrite(13, HIGH);
-  long timeStarted = millis();
-  for (int i = 0; i < repetitions; i++) {
-    Serial.print(analogRead(A0));
-    Serial.print(" ");
-    Serial.print(analogRead(A0));
-    Serial.print(" ");
-    Serial.println(millis() - timeStarted);
+
+  while(millis() - startTime <= timePerSample) {
+    for(int i = 0; i < REPETITIONS; i++) {
+      analogRead(A0);
+    }
+    int firstSample = analogRead(A0);
+    for(int i = 0; i < REPETITIONS; i++) {
+      analogRead(A1);
+    }
+    int secondSample = analogRead(A1);
+  
+    Serial.println(secondSample - firstSample);
   }
+
+  Serial.println("END");
+
   digitalWrite(13, LOW);
 }
